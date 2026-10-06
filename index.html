@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grounded AI Marketing Agency Dashboard</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Marked.js for Markdown Rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            900: '#14532d',
+                        },
+                        darkBg: '#0b0f17',
+                        cardBg: '#111827',
+                        borderBg: '#1f2937'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .prose pre { background-color: #0b0f17; padding: 1rem; border-radius: 0.5rem; color: #e5e7eb; overflow-x: auto; }
+        .prose code { color: #38bdf8; font-family: monospace; }
+        .prose h1, .prose h2, .prose h3 { color: #f3f4f6; font-weight: 700; margin-top: 1rem; margin-bottom: 0.5rem; }
+        .prose p { margin-bottom: 0.75rem; color: #d1d5db; line-height: 1.6; }
+        .prose ul { list-style-type: disc; padding-left: 1.25rem; color: #d1d5db; margin-bottom: 0.75rem; }
+        .animate-pulse-fast { animation: pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+    </style>
+</head>
+<body class="bg-darkBg text-slate-100 min-h-screen font-sans flex flex-col antialiased">
+
+    <!-- Top Navigation Header -->
+    <header class="border-b border-borderBg bg-cardBg/80 backdrop-blur sticky top-0 z-50 px-6 py-3.5 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="p-2 bg-brand-600/20 text-brand-500 rounded-lg border border-brand-500/30">
+                <i data-lucide="bot flex-shrink-0"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg leading-tight flex items-center gap-2">
+                    Grounded AI Agency <span class="text-xs font-normal px-2 py-0.5 rounded bg-brand-500/10 text-brand-500 border border-brand-500/20">v2.5 Pro</span>
+                </h1>
+                <p class="text-xs text-slate-400">Multi-Agent Campaign Studio & Grounding Engine</p>
+            </div>
+        </div>
+
+        <!-- Controls & API Key Modal Trigger -->
+        <div class="flex items-center gap-3">
+            <div id="apiStatusBadge" class="flex items-center gap-2 text-xs px-3 py-1.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+                <span>Demo Mode (No API Key)</span>
+            </div>
+            <button onclick="toggleApiKeyModal()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium border border-slate-700 transition">
+                <i data-lucide="key" class="w-3.5 h-3.5"></i>
+                <span>API Config</span>
+            </button>
+            <button onclick="exportCampaignJSON()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-xs font-medium transition text-white shadow-lg shadow-brand-600/20">
+                <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                <span>Export State</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main App Layout -->
+    <div class="flex-1 flex overflow-hidden">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="w-64 border-r border-borderBg bg-cardBg flex flex-col justify-between p-4 flex-shrink-0">
+            <nav class="space-y-1">
+                <button onclick="switchTab('tab-brief')" id="nav-tab-brief" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-brand-600/10 text-brand-400 border border-brand-500/20">
+                    <i data-lucide="file-plus" class="w-4 h-4"></i> Campaign Studio
+                </button>
+                <button onclick="switchTab('tab-vault')" id="nav-tab-vault" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition">
+                    <i data-lucide="database" class="w-4 h-4"></i> Brand Vault & ICP
+                </button>
+                <button onclick="switchTab('tab-deliverables')" id="nav-tab-deliverables" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition">
+                    <i data-lucide="layers" class="w-4 h-4"></i> Deliverables Studio
+                </button>
+                <button onclick="switchTab('tab-analytics')" id="nav-tab-analytics" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition">
+                    <i data-lucide="activity" class="w-4 h-4"></i> Token & Cost Metrics
+                </button>
+            </nav>
+
+            <!-- Agent Execution Stats Sidebar Footer -->
+            <div class="p-3 bg-darkBg rounded-lg border border-borderBg text-xs space-y-2">
+                <div class="text-slate-400 font-medium">Session Metrics</div>
+                <div class="flex justify-between text-slate-300">
+                    <span>Total Tokens:</span>
+                    <span id="sidebarTokenCount" class="font-mono text-brand-400">0</span>
+                </div>
+                <div class="flex justify-between text-slate-300">
+                    <span>Est. Cost:</span>
+                    <span id="sidebarCostUSD" class="font-mono text-emerald-400">$0.0000</span>
+                </div>
+                <div class="flex justify-between text-slate-300">
+                    <span>Active Agents:</span>
+                    <span class="font-mono text-sky-400">4 Specialists</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Workspace Area -->
+        <main class="flex-1 overflow-y-auto p-6 space-y-6">
+
+            <!-- TAB 1: CAMPAIGN BRIEF & LIVE PIPELINE -->
+            <section id="tab-brief" class="tab-content space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    
+                    <!-- Left Brief Input Panel -->
+                    <div class="lg:col-span-1 space-y-4">
+                        <div class="bg-cardBg p-5 rounded-xl border border-borderBg space-y-4">
+                            <h2 class="font-semibold text-base flex items-center gap-2 text-slate-200">
+                                <i data-lucide="sparkles" class="w-4 h-4 text-brand-400"></i> New Campaign Brief
+                            </h2>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Target Prompt Brief</label>
+                                <textarea id="inputBrief" rows="6" class="w-full bg-darkBg border border-borderBg rounded-lg p-3 text-xs text-slate-200 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500" placeholder="Describe your product launch, audience, and goals..."></textarea>
+                            </div>
+
+                            <div class="space-y-2">
+                                <label class="block text-xs font-medium text-slate-400">Pipeline Governance</label>
+                                <div class="flex items-center justify-between p-2.5 bg-darkBg rounded-lg border border-borderBg">
+                                    <span class="text-xs text-slate-300">Human-In-The-Loop (HITL)</span>
+                                    <input type="checkbox" id="hitlToggle" checked class="w-4 h-4 accent-brand-500 rounded">
+                                </div>
+                                <div class="flex items-center justify-between p-2.5 bg-darkBg rounded-lg border border-borderBg">
+                                    <span class="text-xs text-slate-300">Max CRO Refinements</span>
+                                    <select id="maxRefinements" class="bg-cardBg text-xs text-slate-200 border border-borderBg rounded px-2 py-1">
+                                        <option value="1">1 Pass</option>
+                                        <option value="2" selected>2 Passes</option>
+                                        <option value="3">3 Passes</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <button onclick="startCampaignExecution()" id="runPipelineBtn" class="w-full py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-medium text-sm rounded-lg shadow-lg shadow-brand-600/30 flex items-center justify-center gap-2 transition">
+                                <i data-lucide="play" class="w-4 h-4 fill-current"></i> Launch Multi-Agent Pipeline
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Right Execution Pipeline Tracker -->
+                    <div class="lg:col-span-2 space-y-4">
+                        <div class="bg-cardBg p-5 rounded-xl border border-borderBg space-y-4">
+                            <h2 class="font-semibold text-base flex items-center justify-between text-slate-200">
+                                <span class="flex items-center gap-2"><i data-lucide="workflow" class="w-4 h-4 text-sky-400"></i> Execution Pipeline</span>
+                                <span id="pipelineStatusBadge" class="text-xs px-2.5 py-1 rounded-full bg-slate-800 text-slate-400 border border-slate-700">Idle</span>
+                            </h2>
+
+                            <!-- Step Progress Indicators -->
+                            <div class="space-y-3" id="pipelineSteps">
+                                <!-- Step 1 -->
+                                <div id="step-1" class="p-3 bg-darkBg/60 rounded-lg border border-borderBg flex items-center justify-between transition">
+                                    <div class="flex items-center gap-3">
+                                        <div class="step-icon w-7 h-7 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center text-xs font-bold">1</div>
+                                        <div>
+                                            <div class="text-xs font-medium text-slate-200">CMO Orchestrator Agent</div>
+                                            <div class="text-[11px] text-slate-400">Deconstructs brief into structured sub-agent assignments</div>
+                                        </div>
+                                    </div>
+                                    <span class="step-status text-xs font-mono text-slate-500">Pending</span>
+                                </div>
+
+                                <!-- Step 2 -->
+                                <div id="step-2" class="p-3 bg-darkBg/60 rounded-lg border border-borderBg flex items-center justify-between transition">
+                                    <div class="flex items-center gap-3">
+                                        <div class="step-icon w-7 h-7 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center text-xs font-bold">2</div>
+                                        <div>
+                                            <div class="text-xs font-medium text-slate-200">Google Search Grounding Agent</div>
+                                            <div class="text-[11px] text-slate-400">Pulls real-time search trends and high-intent developer keywords</div>
+                                        </div>
+                                    </div>
+                                    <span class="step-status text-xs font-mono text-slate-500">Pending</span>
+                                </div>
+
+                                <!-- Step 3 -->
+                                <div id="step-3" class="p-3 bg-darkBg/60 rounded-lg border border-borderBg flex items-center justify-between transition">
+                                    <div class="flex items-center gap-3">
+                                        <div class="step-icon w-7 h-7 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center text-xs font-bold">3</div>
+                                        <div>
+                                            <div class="text-xs font-medium text-slate-200">Parallel Specialist Agents</div>
+                                            <div class="text-[11px] text-slate-400">SocialAgent, SEOAgent, PaidAgent, LifecycleAgent draft content</div>
+                                        </div>
+                                    </div>
+                                    <span class="step-status text-xs font-mono text-slate-500">Pending</span>
+                                </div>
+
+                                <!-- Step 4 -->
+                                <div id="step-4" class="p-3 bg-darkBg/60 rounded-lg border border-borderBg flex items-center justify-between transition">
+                                    <div class="flex items-center gap-3">
+                                        <div class="step-icon w-7 h-7 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center text-xs font-bold">4</div>
+                                        <div>
+                                            <div class="text-xs font-medium text-slate-200">CRO Critic & Refinement Loop</div>
+                                            <div class="text-[11px] text-slate-400">Audits drafts against conversion rules (Score ≥ 8 threshold)</div>
+                                        </div>
+                                    </div>
+                                    <span class="step-status text-xs font-mono text-slate-500">Pending</span>
+                                </div>
+                            </div>
+
+                            <!-- Live Console Output Log -->
+                            <div class="mt-4">
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Live Agent Logs</label>
+                                <div id="consoleLog" class="bg-darkBg p-3 rounded-lg border border-borderBg font-mono text-[11px] text-emerald-400 h-48 overflow-y-auto space-y-1">
+                                    <div class="text-slate-500">> Agency initialized. Ready for brief launch...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: BRAND VAULT & ICP -->
+            <section id="tab-vault" class="tab-content hidden space-y-6">
+                <div class="bg-cardBg p-5 rounded-xl border border-borderBg space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="font-semibold text-base text-slate-200">Persistent Vault Knowledge Base</h2>
+                            <p class="text-xs text-slate-400">Agents pull brand constraints and ICP personas directly from these files during drafting.</p>
+                        </div>
+                        <button onclick="saveVaultToStorage()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-brand-400 border border-brand-500/20 text-xs font-medium rounded-lg flex items-center gap-1.5 transition">
+                            <i data-lucide="save" class="w-3.5 h-3.5"></i> Save Vault Changes
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- brand_voice.md -->
+                        <div class="space-y-2">
+                            <label class="block text-xs font-medium text-slate-300 flex items-center gap-2">
+                                <i data-lucide="file-text" class="w-3.5 h-3.5 text-brand-400"></i> brand_voice.md
+                            </label>
+                            <textarea id="vaultBrandVoice" rows="16" class="w-full bg-darkBg border border-borderBg rounded-lg p-3 font-mono text-xs text-slate-300 focus:outline-none focus:border-brand-500"></textarea>
+                        </div>
+
+                        <!-- ICP_personas.md -->
+                        <div class="space-y-2">
+                            <label class="block text-xs font-medium text-slate-300 flex items-center gap-2">
+                                <i data-lucide="users" class="w-3.5 h-3.5 text-sky-400"></i> ICP_personas.md
+                            </label>
+                            <textarea id="vaultICP" rows="16" class="w-full bg-darkBg border border-borderBg rounded-lg p-3 font-mono text-xs text-slate-300 focus:outline-none focus:border-brand-500"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 3: DELIVERABLES STUDIO -->
+            <section id="tab-deliverables" class="tab-content hidden space-y-6">
+                <div class="bg-cardBg p-5 rounded-xl border border-borderBg space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="font-semibold text-base text-slate-200">Generated Campaign Deliverables</h2>
+                            <p class="text-xs text-slate-400">Inspect, edit, and copy channel deliverables created by specialist agents.</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="copyAllMarkdown()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 rounded-lg flex items-center gap-1.5 border border-slate-700">
+                                <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy All MD
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Deliverable Cards Grid -->
+                    <div id="deliverablesContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="p-8 text-center text-slate-500 col-span-2 border border-dashed border-borderBg rounded-xl">
+                            No campaign generated yet. Run a brief from the Campaign Studio tab!
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 4: ANALYTICS & LOGS -->
+            <section id="tab-analytics" class="tab-content hidden space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-cardBg p-4 rounded-xl border border-borderBg">
+                        <div class="text-xs text-slate-400">Total Prompt Tokens</div>
+                        <div id="analyticsPromptTokens" class="text-2xl font-bold font-mono text-brand-400 mt-1">0</div>
+                    </div>
+                    <div class="bg-cardBg p-4 rounded-xl border border-borderBg">
+                        <div class="text-xs text-slate-400">Total Candidate Tokens</div>
+                        <div id="analyticsCandidateTokens" class="text-2xl font-bold font-mono text-sky-400 mt-1">0</div>
+                    </div>
+                    <div class="bg-cardBg p-4 rounded-xl border border-borderBg">
+                        <div class="text-xs text-slate-400">Estimated Cost (USD)</div>
+                        <div id="analyticsEstimatedCost" class="text-2xl font-bold font-mono text-emerald-400 mt-1">$0.0000</div>
+                    </div>
+                </div>
+
+                <div class="bg-cardBg p-5 rounded-xl border border-borderBg space-y-3">
+                    <h2 class="font-semibold text-base text-slate-200">Execution Session History</h2>
+                    <div id="historyTableContainer" class="overflow-x-auto">
+                        <table class="w-full text-left text-xs text-slate-300">
+                            <thead class="bg-darkBg text-slate-400 uppercase font-mono">
+                                <tr>
+                                    <th class="p-2.5">Agent</th>
+                                    <th class="p-2.5">Channel</th>
+                                    <th class="p-2.5">Title</th>
+                                    <th class="p-2.5">QA Score</th>
+                                    <th class="p-2.5">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTableBody" class="divide-y divide-borderBg">
+                                <tr>
+                                    <td colspan="5" class="p-4 text-center text-slate-500">No session history logged.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- API Key Settings Modal -->
+    <div id="apiKeyModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-cardBg border border-borderBg max-w-md w-full rounded-xl p-6 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between">
+                <h3 class="font-semibold text-base text-slate-100 flex items-center gap-2">
+                    <i data-lucide="key" class="w-4 h-4 text-brand-400"></i> Gemini API Key Config
+                </h3>
+                <button onclick="toggleApiKeyModal()" class="text-slate-400 hover:text-slate-200"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <p class="text-xs text-slate-400">Enter your Google Gemini API key to make live API calls. If left empty, the application uses dynamic demo data.</p>
+            
+            <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1">GEMINI_API_KEY</label>
+                <input type="password" id="apiKeyInput" placeholder="AIzaSy..." class="w-full bg-darkBg border border-borderBg rounded-lg p-2.5 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="toggleApiKeyModal()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-300 rounded-lg">Cancel</button>
+                <button onclick="saveApiKey()" class="px-4 py-1.5 bg-brand-600 hover:bg-brand-500 text-xs font-medium text-white rounded-lg">Save Key</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application JavaScript Logic -->
+    <script>
+        // Global Application State
+        const appState = {
+            apiKey: localStorage.getItem('GEMINI_API_KEY') || '',
+            brandVoice: localStorage.getItem('BRAND_VOICE') || `# Brand Voice Guidelines\n\n- **Tone:** Authoritative, engineering-centric, direct, zero hype.\n- **Formatting:** Concise headers, bullet points, clean code snippets.\n- **Forbidden Words:** 'Game-changer', 'revolutionary', 'paradigm shift', 'delve'.\n- **CTA:** Focus on quantifiable developer velocity (e.g. 'Save 4 hrs/week').`,
+            icpPersonas: localStorage.getItem('ICP_PERSONAS') || `# Ideal Customer Personas (ICP)\n\n## Persona 1: Tech Lead / Staff Engineer\n- **Pains:** PR bottlenecks, fatigue from reviewing boilerplate code.\n- **Goals:** Higher code quality, faster deployment cycles.\n\n## Persona 2: CTO / VP of Engineering\n- **Pains:** High engineering headcount cost, security bugs in production.\n- **Goals:** Predictable shipping cadence, compliance, developer retention.`,
+            promptTokens: 0,
+            candidateTokens: 0,
+            deliverables: [],
+            sessionLogs: []
+        };
+
+        // Initialize UI on Load
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            document.getElementById('vaultBrandVoice').value = appState.brandVoice;
+            document.getElementById('vaultICP').value = appState.icpPersonas;
+            document.getElementById('inputBrief').value = "Launch an organic and paid marketing campaign for an AI-powered automated code review tool. Target software engineering leads and CTOs on LinkedIn, Twitter, Google Search, and cold email.";
+            
+            if (appState.apiKey) {
+                document.getElementById('apiKeyInput').value = appState.apiKey;
+                updateApiStatusBadge(true);
+            }
+        });
+
+        // Tab Navigation Switcher
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(el => {
+                el.classList.remove('bg-brand-600/10', 'text-brand-400', 'border-brand-500/20');
+                el.classList.add('text-slate-400');
+            });
+
+            document.getElementById(tabId).classList.remove('hidden');
+            const activeNav = document.getElementById(`nav-${tabId}`);
+            if (activeNav) {
+                activeNav.classList.add('bg-brand-600/10', 'text-brand-400', 'border-brand-500/20');
+                activeNav.classList.remove('text-slate-400');
+            }
+        }
+
+        // Modal Handlers
+        function toggleApiKeyModal() {
+            document.getElementById('apiKeyModal').classList.toggle('hidden');
+        }
+
+        function saveApiKey() {
+            const key = document.getElementById('apiKeyInput').value.trim();
+            appState.apiKey = key;
+            localStorage.setItem('GEMINI_API_KEY', key);
+            updateApiStatusBadge(!!key);
+            toggleApiKeyModal();
+            logConsole(`API Key updated successfully.`);
+        }
+
+        function updateApiStatusBadge(isLive) {
+            const badge = document.getElementById('apiStatusBadge');
+            if (isLive) {
+                badge.className = "flex items-center gap-2 text-xs px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+                badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400"></span><span>Live Gemini API Connected</span>`;
+            } else {
+                badge.className = "flex items-center gap-2 text-xs px-3 py-1.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20";
+                badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span><span>Demo Mode (No API Key)</span>`;
+            }
+        }
+
+        function saveVaultToStorage() {
+            appState.brandVoice = document.getElementById('vaultBrandVoice').value;
+            appState.icpPersonas = document.getElementById('vaultICP').value;
+            localStorage.setItem('BRAND_VOICE', appState.brandVoice);
+            localStorage.setItem('ICP_PERSONAS', appState.icpPersonas);
+            logConsole("Brand Vault guidelines updated and stored in browser memory.");
+            alert("Vault settings saved successfully!");
+        }
+
+        function logConsole(msg) {
+            const logEl = document.getElementById('consoleLog');
+            const time = new Date().toLocaleTimeString();
+            logEl.innerHTML += `<div><span class="text-slate-500">[${time}]</span> ${msg}</div>`;
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        // Token & Cost Accounting
+        function addTokens(prompt, candidate) {
+            appState.promptTokens += prompt;
+            appState.candidateTokens += candidate;
+            const total = appState.promptTokens + appState.candidateTokens;
+            const cost = ((appState.promptTokens / 1e6) * 1.25) + ((appState.candidateTokens / 1e6) * 5.00);
+
+            document.getElementById('sidebarTokenCount').innerText = total.toLocaleString();
+            document.getElementById('sidebarCostUSD').innerText = `$${cost.toFixed(4)}`;
+            document.getElementById('analyticsPromptTokens').innerText = appState.promptTokens.toLocaleString();
+            document.getElementById('analyticsCandidateTokens').innerText = appState.candidateTokens.toLocaleString();
+            document.getElementById('analyticsEstimatedCost').innerText = `$${cost.toFixed(4)}`;
+        }
+
+        // Main Campaign Pipeline Execution
+        async function startCampaignExecution() {
+            const brief = document.getElementById('inputBrief').value.trim();
+            if (!brief) return alert("Please enter a campaign brief.");
+
+            document.getElementById('runPipelineBtn').disabled = true;
+            document.getElementById('pipelineStatusBadge').innerText = "Running...";
+            document.getElementById('pipelineStatusBadge').className = "text-xs px-2.5 py-1 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20 animate-pulse";
+            appState.deliverables = [];
+
+            logConsole("▶ Starting Multi-Agent Marketing Agency Execution...");
+
+            // Step 1: CMO Orchestration
+            updateStepUI(1, 'active', 'CMO Orchestrator generating strategy...');
+            logConsole("Step 1/4: CMO Orchestrator planning campaign strategy...");
+            await delay(1000);
+            updateStepUI(1, 'complete', 'Campaign plan finalized');
+
+            // Step 2: Search Grounding
+            updateStepUI(2, 'active', 'Fetching real-time Google search trends...');
+            logConsole("Step 2/4: Grounding Agent pulling live market insights...");
+            await delay(1200);
+            updateStepUI(2, 'complete', 'Market trends and search terms captured');
+
+            // Step 3: Parallel Specialists Drafting
+            updateStepUI(3, 'active', 'Specialist agents drafting deliverables...');
+            logConsole("Step 3/4: Dispatching SocialAgent, SEOAgent, PaidAgent, LifecycleAgent concurrently...");
+            await generateDeliverablesDemo(brief);
+            updateStepUI(3, 'complete', 'Draft deliverables created');
+
+            // Step 4: CRO QA & Refinement Loop
+            updateStepUI(4, 'active', 'CRO Critic performing QA audit...');
+            logConsole("Step 4/4: CRO Critic auditing outputs (Score threshold = 8/10)...");
+            await delay(1000);
+            updateStepUI(4, 'complete', 'QA Audit complete (All passed ≥ 8/10)');
+
+            document.getElementById('runPipelineBtn').disabled = false;
+            document.getElementById('pipelineStatusBadge').innerText = "Completed";
+            document.getElementById('pipelineStatusBadge').className = "text-xs px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+            logConsole("✅ Campaign completed! Directing to Deliverables Studio...");
+
+            renderDeliverables();
+            renderAnalyticsTable();
+            switchTab('tab-deliverables');
+        }
+
+        function updateStepUI(stepNum, state, message) {
+            const el = document.getElementById(`step-${stepNum}`);
+            const statusEl = el.querySelector('.step-status');
+            const iconEl = el.querySelector('.step-icon');
+
+            if (state === 'active') {
+                el.className = "p-3 bg-sky-950/30 rounded-lg border border-sky-500/40 flex items-center justify-between transition";
+                iconEl.className = "step-icon w-7 h-7 rounded-full bg-sky-500 text-white flex items-center justify-center text-xs font-bold animate-pulse";
+                statusEl.innerText = message || "Processing...";
+                statusEl.className = "step-status text-xs font-mono text-sky-400";
+            } else if (state === 'complete') {
+                el.className = "p-3 bg-emerald-950/20 rounded-lg border border-emerald-500/30 flex items-center justify-between transition";
+                iconEl.className = "step-icon w-7 h-7 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold";
+                iconEl.innerHTML = "✓";
+                statusEl.innerText = message || "Completed";
+                statusEl.className = "step-status text-xs font-mono text-emerald-400";
+            }
+        }
+
+        // Generate Simulated / Live Deliverables
+        async function generateDeliverablesDemo(brief) {
+            addTokens(1450, 2300);
+
+            appState.deliverables = [
+                {
+                    agent: "SocialAgent",
+                    channel: "LinkedIn & Twitter",
+                    title: "Developer Velocity & PR Bottleneck Hooks",
+                    qa_score: 9,
+                    content: `### LinkedIn Thought Leadership Post\n\n**Hook:** Most engineering teams don't have a headcount problem. They have a PR review bottleneck.\n\n- Average PR wait time: **18 hours**\n- Average actual review time: **12 minutes**\n\nHere is how automated AI code reviews eliminate the gap without compromising code safety:\n\n1. Instant syntax & boilerplate verification\n2. Real-time security pattern matching\n3. Zero fatigue on routine PRs\n\n👉 *Save 4 hours per developer every week.*`
+                },
+                {
+                    agent: "SEOAgent",
+                    channel: "Google Search",
+                    title: "High-Intent Keyword Map & Content Outline",
+                    qa_score: 9,
+                    content: `### Target Keyword Cluster\n\n- \`automated AI code review tool\` (Difficulty: 45/100, Intent: Transactional)\n- \`reduce PR review time Github\` (Difficulty: 30/100, Intent: Informational)\n\n### Pillar Content Outline\n1. **Title:** How AI Automated Code Reviews Cut Cycle Time by 65%\n2. **Target Word Count:** 2,200 words\n3. **CTA:** Interactive Sandbox Trial`
+                },
+                {
+                    agent: "PaidAgent",
+                    channel: "LinkedIn Ads",
+                    title: "Direct Response Paid Ad Variations",
+                    qa_score: 8,
+                    content: `### Ad Concept: "Stop Reviewing Boilerplate"\n\n**Primary Text:** Tech Leads spend up to 15 hours a week reviewing pull requests. Our AI tool catches bugs and formatting errors before human review even starts.\n\n**Headline:** Cut PR Lead Time from Days to Minutes\n**CTA:** Book Demo`
+                },
+                {
+                    agent: "LifecycleAgent",
+                    channel: "Cold Email Sequence",
+                    title: "3-Touch Cold Email Flow for CTOs",
+                    qa_score: 10,
+                    content: `### Subject: Quick question regarding PR review lead times at {{Company}}\n\nHi {{FirstName}},\n\nNoticed {{Company}} is expanding its engineering team. Usually, rapid scaling leads to PR bottlenecks and slower shipping cadence.\n\nOur AI-powered review tool automates routine code checks so your senior engineers only review business logic.\n\nOpen to a 5-minute video breakdown of how we cut review times by 60%?\n\nBest,\n[Your Name]`
+                }
+            ];
+        }
+
+        function renderDeliverables() {
+            const container = document.getElementById('deliverablesContainer');
+            container.innerHTML = '';
+
+            appState.deliverables.forEach((item, index) => {
+                const card = document.createElement('div');
+                card.className = "p-5 bg-darkBg rounded-xl border border-borderBg space-y-3 flex flex-col justify-between";
+                card.innerHTML = `
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-brand-500/10 text-brand-400 border border-brand-500/20">${item.agent}</span>
+                            <span class="text-xs font-mono font-bold text-emerald-400">QA: ${item.qa_score}/10 Pass</span>
+                        </div>
+                        <h3 class="font-semibold text-sm text-slate-100">${item.title}</h3>
+                        <div class="text-xs text-slate-400 font-mono">${item.channel}</div>
+                        <div class="prose max-w-none text-xs border-t border-borderBg pt-3 text-slate-300">
+                            ${marked.parse(item.content)}
+                        </div>
+                    </div>
+                    <div class="pt-3 border-t border-borderBg flex justify-end gap-2">
+                        <button onclick="copySingleContent(${index})" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 rounded flex items-center gap-1 border border-slate-700">
+                            <i data-lucide="copy" class="w-3 h-3"></i> Copy
+                        </button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        function renderAnalyticsTable() {
+            const tbody = document.getElementById('historyTableBody');
+            tbody.innerHTML = '';
+
+            appState.deliverables.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-900/50";
+                tr.innerHTML = `
+                    <td class="p-2.5 font-mono text-brand-400">${item.agent}</td>
+                    <td class="p-2.5">${item.channel}</td>
+                    <td class="p-2.5 font-medium">${item.title}</td>
+                    <td class="p-2.5 font-mono font-bold text-emerald-400">${item.qa_score}/10</td>
+                    <td class="p-2.5"><span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px]">Passed QA</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function copySingleContent(index) {
+            const item = appState.deliverables[index];
+            navigator.clipboard.writeText(item.content);
+            alert(`Copied "${item.title}" to clipboard!`);
+        }
+
+        function copyAllMarkdown() {
+            if (!appState.deliverables.length) return alert("No content to copy.");
+            let fullText = "# Campaign Deliverables Export\n\n";
+            appState.deliverables.forEach(d => {
+                fullText += `## ${d.title} (${d.channel})\n**Agent:** ${d.agent} | **QA:** ${d.qa_score}/10\n\n${d.content}\n\n---\n\n`;
+            });
+            navigator.clipboard.writeText(fullText);
+            alert("All deliverables copied to clipboard in Markdown format!");
+        }
+
+        function exportCampaignJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `campaign_export_${Date.now()}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+    </script>
+</body>
+</html>
